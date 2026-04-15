@@ -1,0 +1,25 @@
+# ElderCare Companion — 所需 Python 套件
+
+# LINE Bot
+line-bot-sdk>=2.0.0
+
+# Web Framework
+flask>=3.0.0
+
+# 環境變數
+python-dotenv>=1.0.0
+
+# Firebase (未來串接)
+# firebase-admin>=6.0.0
+
+# HTTP 請求
+requests>=2.31.0
+
+# 日期/時間處理（內建，但有額外需求時）
+python-dateutil>=2.8.0
+
+# 影像處理（血壓計照片 OCR）
+# pillow>=10.0.0
+
+# 非同步任務（排程增強）
+# APScheduler>=3.10.0
