@@ -116,7 +116,7 @@ def ask_ai(user_id, message, companion_key, system_prompt):
                 json={
                     "model": MODEL,
                     "messages": messages,
-                    "max_tokens": 200
+                    "max_tokens": 400
                 },
                 timeout=30
             )
