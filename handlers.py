@@ -3,6 +3,7 @@ ElderCare Companion — 訊息處理 Logic
 """
 
 import os
+import re
 from dotenv import load_dotenv
 
 # 延遲載入，避免環境變數還沒設定就初始化
@@ -21,14 +22,29 @@ def _get_api():
     if line_bot_api is None:
         line_bot_api = _get_line_bot_api()
     return line_bot_api
+
 from linebot.models import TextSendMessage, FlexSendMessage, TemplateSendMessage, ButtonsTemplate, MessageAction
-from datetime import datetime, timedelta
+from datetime import datetime
 import random
 
 from companions import COMPANION_PRESETS, get_companion, format_companion_for_ai
 from ai_service import ask_ai
 from database import record_message, get_user_companion, set_user_companion, daily_check_in, record_blood_pressure
 
+
+# =====================================================
+# Companion 選項設定（放在模組層級）
+# =====================================================
+
+COMPANION_OPTIONS = [
+    ("scholar", "老陳（學者）", "愛聊經濟、股票、國際大事"),
+    ("grandma", "美雲阿姨（長輩）", "溫暖會關心人，愛聊家庭"),
+    ("comedian", "阿Ken（業務員）", "幽默風趣，愛開玩笑"),
+    ("chef", "阿美姐（廚師）", "愛聊食譜、吃的話題"),
+    ("astrologer", "韻璇（占星師）", "星座塔羅、靈性指引"),
+    ("fengshui", "雲峰大師（命理師）", "易經八字、風水命理"),
+    ("rockefeller", "洛克菲勒（商業導師）", "商業智慧、财富責任、人生導師"),
+]
 
 
 # =====================================================
@@ -57,7 +73,6 @@ def handle_text(reply_token, user_id, text):
         return
 
     # 3.5 檢查是否為血壓輸入（格式：120/80 或 120,80 或 120 80）
-    import re
     bp_match = re.match(r'^(\d{2,3})[\/\s,]+(\d{2,3})$', text.strip())
     if bp_match:
         systolic = int(bp_match.group(1))
@@ -111,6 +126,7 @@ def handle_text(reply_token, user_id, text):
     # 7. 記錄對話
     record_message(user_id, text, ai_response, companion_key)
 
+
 # =====================================================
 # 圖片處理（血壓/血糖拍照）
 # =====================================================
@@ -127,7 +143,6 @@ def handle_image(reply_token, user_id, image_path):
 
 我會幫你記錄下來！
 """
-
     _get_api().reply_message(reply_token, TextSendMessage(text=response))
 
 
@@ -184,7 +199,7 @@ def select_companion(reply_token, user_id, companion_key):
     if companion_key not in COMPANION_PRESETS:
         _get_api().reply_message(
             reply_token,
-            TextSendMessage(text="這個朋友不在名單上哦！試試「更換朋友」指令。")
+            TextSendMessage(text="這個朋友不在名單上哦！")
         )
         return
 
@@ -209,17 +224,6 @@ def select_companion(reply_token, user_id, companion_key):
 def guide_companion_selection(reply_token, user_id):
     """引導用戶選擇Companion"""
 
-    # 明確對應數字和Companion key
-    COMPANION_OPTIONS = [
-        ("scholar", "老陳（學者）", "愛聊經濟、股票、國際大事"),
-        ("grandma", "美雲阿姨（長輩）", "溫暖會關心人、愛聊家庭"),
-        ("comedian", "阿Ken（業務員）", "幽默風趣、愛開玩笑"),
-        ("chef", "阿美姐（廚師）", "愛聊食譜、吃的話題"),
-        ("astrologer", "韻璇（占星師）", "星座塔羅、靈性指引"),
-        ("fengshui", "雲峰大師（命理師）", "易經八字、風水命理"),
-        ("rockefeller", "洛克菲勒（商業導師）", "商業智慧、财富責任、人生導師"),
-    ]
-    
     # 顯示7種人格選項
     options_text = "\n".join([f"{i+1}️⃣ {name} — {desc}" for i, (_, name, desc) in enumerate(COMPANION_OPTIONS)])
     
@@ -233,23 +237,7 @@ def guide_companion_selection(reply_token, user_id):
 
 輸入「更換朋友」可以看更多人格哦！"""
 
-在開始聊天之前，告訴我你喜歡什麼類型的朋友？
-
-1️⃣ 老陳（學者）— 愛聊經濟、股票、國際大事
-2️⃣ 美雲阿姨（長輩）— 溫暖會關心人、愛聊家庭
-3️⃣ 阿Ken（業務員）— 幽默風趣、愛開玩笑
-4️⃣ 阿美姐（廚師）— 愛聊食譜、吃的話題
-5️⃣ 韻璇（占星師）— 星座塔羅、靈性指引
-6️⃣ 雲峰大師（命理師）— 易經八字、風水命理
-
-請輸入數字 1-6 選擇！
-
-輸入「更換朋友」可以看更多人格哦！"""
-
-    _get_api().reply_message(
-        reply_token,
-        TextSendMessage(text=text)
-    )
+    _get_api().reply_message(reply_token, TextSendMessage(text=text))
 
 
 # =====================================================
@@ -280,10 +268,7 @@ def send_emergency(reply_token, user_id):
             print(f"無法發送緊急通知給 {member_id}: {e}")
 
     # 回覆用戶
-    _get_api().reply_message(
-        reply_token,
-        TextSendMessage(text=f"🚨 已通知所有家人（共{len(family)}位）！")
-    )
+    _get_api().reply_message(reply_token, TextSendMessage(text=f"🚨 已通知所有家人（共{len(family)}位）！"))
 
 
 # =====================================================
@@ -298,7 +283,7 @@ def handle_command(reply_token, user_id, command):
 🤖 EldeCare 指令：
 
 /打卡 — 今日健康打卡
-/bp — 記錄血壓（拍照上傳）
+/bp — 記錄血壓（直接輸入數值如130/80）
 /用藥 — 用藥提醒設定
 /健康報告 — 本月健康趨勢
 /更換朋友 — 選擇不同陪伴者
