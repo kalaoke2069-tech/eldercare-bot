@@ -56,6 +56,32 @@ def handle_text(reply_token, user_id, text):
         handle_command(reply_token, user_id, text)
         return
 
+    # 3.5 檢查是否為血壓輸入（格式：120/80 或 120,80 或 120 80）
+    import re
+    bp_match = re.match(r'^(\d{2,3})[\/\s,]+(\d{2,3})$', text.strip())
+    if bp_match:
+        systolic = int(bp_match.group(1))
+        diastolic = int(bp_match.group(2))
+        
+        # 簡單驗證
+        if 60 <= systolic <= 250 and 40 <= diastolic <= 150:
+            record_blood_pressure(user_id, systolic, diastolic)
+            status = '✅ 血壓正常，繼續保持！' if systolic < 130 else '⚠️ 血壓偏高，建議注意飲食並持續觀察'
+            response = f"""
+📊 血壓記錄完成！
+
+收縮壓：{systolic} mmHg
+舒張壓：{diastolic} mmHg
+時間：{datetime.now().strftime('%H:%M')}
+
+{status}
+            """
+            _get_api().reply_message(reply_token, TextSendMessage(text=response))
+            return
+        else:
+            _get_api().reply_message(reply_token, TextSendMessage(text="這個數值不太對喔，請確認血壓計顯示後再告訴我，例如：130/80"))
+            return
+
     # 4. 日常聊天 → AI Companion 回覆
     companion_key = get_user_companion(user_id)
     if not companion_key:
@@ -92,28 +118,15 @@ def handle_text(reply_token, user_id, text):
 def handle_image(reply_token, user_id, image_path):
     """處理圖片：血壓計、血糖機拍照"""
 
-    # TODO: 用視覺模型讀取圖片中的數值
-    # 假設這裡用 PIL + OCR 或 MiniMax Vision API
-    # extracted_value = read_blood_pressure_from_image(image_path)
+    # 請用戶手動輸入血壓值
+    response = """
+📸 照片收到了！
 
-    # 模擬：隨機血壓值（測試用）
-    import random
-    systolic = random.randint(115, 135)
-    diastolic = random.randint(75, 88)
+請告訴我你的血壓數值，例如：
+「130/80」或「130、80」
 
-    # 記錄到資料庫
-    record_blood_pressure(user_id, systolic, diastolic)
-
-    # 回覆
-    response = f"""
-📊 血壓記錄完成！
-
-收縮壓：{systolic} mmHg
-舒張壓：{diastolic} mmHg
-時間：{datetime.now().strftime('%H:%M')}
-
-{'✅ 血壓正常，繼續保持！' if systolic < 130 else '⚠️ 血壓偏高，建議注意飲食並持續觀察'}
-    """
+我會幫你記錄下來！
+"""
 
     _get_api().reply_message(reply_token, TextSendMessage(text=response))
 
