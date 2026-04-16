@@ -90,6 +90,7 @@ def ask_ai(user_id, message, companion_key, system_prompt):
 5. 如果對方說身體不舒服，要表現關心並提醒就醫
 6. 不要重複同樣的問候語
 7. 【重要】所有回覆必須使用「繁體中文」（台灣正體中文），絕對不要使用簡體中文。即使偶爾出現也要避免。
+8. 【重要】不要使用thinking或reasoning模式，直接回覆文字。
 """
 
     # 組裝 messages
@@ -130,13 +131,26 @@ def ask_ai(user_id, message, companion_key, system_prompt):
             # 取出回覆（Anthropic 格式）
             content_list = result.get("content", [])
             ai_message = None
+            
+            # 先找 text 類型的 block
             for block in content_list:
                 if block.get("type") == "text":
                     ai_message = block.get("text", "")
                     break
             
+            # 如果沒有 text block，試著用 thinking 內容（但不要thinking本身）
             if not ai_message:
-                last_error = f"No text block: {content_list}"
+                # 取最後一個 thinking 作為備用（但這不是理想回覆）
+                for block in reversed(content_list):
+                    if block.get("type") == "thinking":
+                        # Thinking 內容太長且是思考過程，不適合當回覆
+                        # 所以乾脆放棄，用罐頭
+                        last_error = f"Only thinking block, no text: {content_list}"
+                        print(f"MiniMax API Error (attempt {attempt+1}): {last_error}")
+                        continue  # 重試
+                
+                # 如果連 thinking 都沒有
+                last_error = f"No content blocks: {content_list}"
                 print(f"MiniMax API Error (attempt {attempt+1}): {last_error}")
                 continue  # 重試
 
