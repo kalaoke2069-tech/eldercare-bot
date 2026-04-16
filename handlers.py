@@ -229,7 +229,7 @@ def guide_companion_selection(reply_token, user_id):
     
     text = f"""👋 嗨！我是你的AI陪伴者！
 
-在開始聊天之前，告訴我你喜歡什麼類型的朋友？
+在開始聊天之前,告訴我你喜歡什麼類型的朋友？
 
 {options_text}
 
