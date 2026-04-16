@@ -38,8 +38,8 @@ from database import record_message, get_user_companion, set_user_companion, dai
 def handle_text(reply_token, user_id, text):
     """處理一般文字訊息，交給 AI Companion 回覆"""
 
-    # 1. 檢查數字選擇 (1-6)
-    if text.strip() in ['1', '2', '3', '4', '5', '6']:
+    # 1. 檢查數字選擇 (1-7)
+    if text.strip() in ['1', '2', '3', '4', '5', '6', '7']:
         idx = int(text.strip()) - 1
         companion_key = COMPANION_OPTIONS[idx][0]
         select_companion(reply_token, user_id, companion_key)
@@ -204,9 +204,10 @@ def guide_companion_selection(reply_token, user_id):
         ("chef", "阿美姐（廚師）", "愛聊食譜、吃的話題"),
         ("astrologer", "韻璇（占星師）", "星座塔羅、靈性指引"),
         ("fengshui", "雲峰大師（命理師）", "易經八字、風水命理"),
+        ("rockefeller", "洛克菲勒（商業導師）", "商業智慧、财富責任、人生導師"),
     ]
     
-    # 顯示6種人格選項
+    # 顯示7種人格選項
     options_text = "\n".join([f"{i+1}️⃣ {name} — {desc}" for i, (_, name, desc) in enumerate(COMPANION_OPTIONS)])
     
     text = f"""👋 嗨！我是你的AI陪伴者！
@@ -215,7 +216,7 @@ def guide_companion_selection(reply_token, user_id):
 
 {options_text}
 
-請輸入數字 1-6 選擇！
+請輸入數字 1-7 選擇！
 
 輸入「更換朋友」可以看更多人格哦！"""
 
