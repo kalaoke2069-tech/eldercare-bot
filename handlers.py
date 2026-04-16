@@ -40,8 +40,8 @@ def handle_text(reply_token, user_id, text):
 
     # 1. 檢查數字選擇 (1-6)
     if text.strip() in ['1', '2', '3', '4', '5', '6']:
-        options = list(COMPANION_PRESETS.keys())[:6]
-        companion_key = options[int(text.strip()) - 1]
+        idx = int(text.strip()) - 1
+        companion_key = COMPANION_OPTIONS[idx][0]
         select_companion(reply_token, user_id, companion_key)
         return
 
@@ -196,10 +196,28 @@ def select_companion(reply_token, user_id, companion_key):
 def guide_companion_selection(reply_token, user_id):
     """引導用戶選擇Companion"""
 
-    # 顯示6種人格選項
-    options = list(COMPANION_PRESETS.items())[:6]
+    # 明確對應數字和Companion key
+    COMPANION_OPTIONS = [
+        ("scholar", "老陳（學者）", "愛聊經濟、股票、國際大事"),
+        ("grandma", "美雲阿姨（長輩）", "溫暖會關心人、愛聊家庭"),
+        ("comedian", "阿Ken（業務員）", "幽默風趣、愛開玩笑"),
+        ("chef", "阿美姐（廚師）", "愛聊食譜、吃的話題"),
+        ("astrologer", "韻璇（占星師）", "星座塔羅、靈性指引"),
+        ("fengshui", "雲峰大師（命理師）", "易經八字、風水命理"),
+    ]
     
-    text = """👋 嗨！我是你的AI陪伴者！
+    # 顯示6種人格選項
+    options_text = "\n".join([f"{i+1}️⃣ {name} — {desc}" for i, (_, name, desc) in enumerate(COMPANION_OPTIONS)])
+    
+    text = f"""👋 嗨！我是你的AI陪伴者！
+
+在開始聊天之前，告訴我你喜歡什麼類型的朋友？
+
+{options_text}
+
+請輸入數字 1-6 選擇！
+
+輸入「更換朋友」可以看更多人格哦！"""
 
 在開始聊天之前，告訴我你喜歡什麼類型的朋友？
 
