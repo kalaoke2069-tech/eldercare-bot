@@ -45,6 +45,7 @@ COMPANION_OPTIONS = [
     ("fengshui", "雲峰大師(命理師)", "易經八字、風水命理"),
     ("rockefeller", "洛克菲勒(商業導師)", "商業智慧、财富責任、人生導師"),
     ("li_ka_shing", "李嘉誠(華人超人)", "經商之道、逆境自強、慈善奉獻"),
+    ("james_simons", "西蒙斯(量化傳奇)", "量化投資、數學之美、算法交易"),
 ]
 
 
@@ -55,8 +56,8 @@ COMPANION_OPTIONS = [
 def handle_text(reply_token, user_id, text):
     """處理一般文字訊息,交給 AI Companion 回覆"""
 
-    # 1. 檢查數字選擇 (1-8)
-    if text.strip() in ['1', '2', '3', '4', '5', '6', '7', '8']:
+    # 1. 檢查數字選擇 (1-9)
+    if text.strip() in ['1', '2', '3', '4', '5', '6', '7', '8', '9']:
         idx = int(text.strip()) - 1
         companion_key = COMPANION_OPTIONS[idx][0]
         select_companion(reply_token, user_id, companion_key)
@@ -225,7 +226,7 @@ def select_companion(reply_token, user_id, companion_key):
 def guide_companion_selection(reply_token, user_id):
     """引導用戶選擇Companion"""
 
-    # 顯示8種人格選項
+    # 顯示9種人格選項
     options_text = "\n".join([f"{i+1}️⃣ {name} — {desc}" for i, (_, name, desc) in enumerate(COMPANION_OPTIONS)])
     
     text = f"""👋 嗨！我是你的AI陪伴者！
@@ -234,7 +235,7 @@ def guide_companion_selection(reply_token, user_id):
 
 {options_text}
 
-請輸入數字 1-8 選擇！
+請輸入數字 1-9 選擇！
 
 輸入「更換朋友」可以看更多人格哦！"""
 
