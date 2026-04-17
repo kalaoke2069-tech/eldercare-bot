@@ -96,7 +96,10 @@ def ask_ai(user_id, message, companion_key, system_prompt):
     # 組裝 messages
     messages = [{"role": "system", "content": full_system}]
     messages.extend(history)
-    messages.append({"role": "user", "content": message})
+    
+    # 在用户訊息前加上語言檢測指令
+    lang_instruction = "[注意：用戶即將輸入一段文字。你必須用與用戶相同的語言回覆。如果用戶用印尼文，回印尼文。如果用戶用英文，回英文。如果用戶用中文，回中文。]"
+    messages.append({"role": "user", "content": f"{lang_instruction}\n\n用戶說：{message}"})
 
     # API 呼叫（使用 Anthropic 兼容端點，含重試機制）
     max_retries = 3
