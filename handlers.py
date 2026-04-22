@@ -30,6 +30,7 @@ import random
 from companions import COMPANION_PRESETS, get_companion, format_companion_for_ai
 from ai_service import ask_ai
 from database import record_message, get_user_companion, set_user_companion, daily_check_in, record_blood_pressure
+from ltc_data import search_ltc, format_ltc_result, get_all_resources_summary
 
 
 # =====================================================
@@ -74,7 +75,32 @@ def handle_text(reply_token, user_id, text):
         handle_command(reply_token, user_id, text)
         return
 
-    # 3.5 檢查是否為血壓輸入(格式:120/80 或 120,80 或 120 80)
+    # 3.5 長照資源查詢（關鍵字：長照、照護、長者、老人）
+    ltc_keywords = ["長照", "照護", "長者", "老人", "介護", "care"]
+    if any(kw in text for kw in ltc_keywords):
+        # 提取查詢內容
+        query = text.replace("長照", "").replace("照護", "").replace("長者", "").replace("老人", "").strip()
+        
+        if not query or query in ["資訊", "資源", "查詢", "help", "幫助"]:
+            # 顯示總覽
+            response = get_all_resources_summary()
+        else:
+            # 搜尋特定資源
+            results = search_ltc(query)
+            if results:
+                response = f"🔍 找到 {len(results)} 個相關資源:\n\n"
+                for r in results[:3]:  # 最多顯示3個
+                    response += format_ltc_result(r)
+                    response += "\n" + "="*20 + "\n\n"
+                if len(results) > 3:
+                    response += f"還有 {len(results)-3} 個更多資源，試著更具體描述你要找的服務。"
+            else:
+                response = f"抱歉，沒有找到與「{query}」相關的長照資源。\n試著換個關鍵字，例如：\n• 長照 居家服務\n• 長照 伊甸\n• 長照 台北"
+        
+        _get_api().reply_message(reply_token, TextSendMessage(text=response))
+        return
+
+    # 4. 血壓輸入（必須在長照查詢之後，避免干擾）
     bp_match = re.match(r'^(\d{2,3})[\/\s,]+(\d{2,3})$', text.strip())
     if bp_match:
         systolic = int(bp_match.group(1))
