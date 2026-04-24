@@ -18,6 +18,8 @@ import os
 
 from handlers import handle_text, handle_image, handle_postback
 from companions import COMPANION_PRESETS
+from database import get_all_user_ids, get_user_companion
+from ltc_data import get_all_resources_summary
 
 load_dotenv()
 
@@ -26,6 +28,46 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(os.getenv('LINE_ACCESS_TOKEN'))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
+# =====================================================
+# cron-job.org 每日打卡 endpoint
+# =====================================================
+
+@app.route("/cron/daily", methods=['GET', 'POST'])
+def cron_daily_check():
+    """
+    cron-job.org 每天早上呼叫這個 endpoint
+    對所有註冊用戶發送「還好嗎？」打卡問候
+    
+    使用方式：
+    cron-job.org 設為 GET https://eldercare-bot-production.up.railway.app/cron/daily?token=YOUR_SECRET_TOKEN
+    """
+    
+    # 驗證 token（防止別人乱call）
+    expected_token = os.getenv('CRON_SECRET_TOKEN', 'eldercare_cron_secret_2026')
+    received_token = request.args.get('token', '')
+    
+    if received_token != expected_token:
+        return 'Unauthorized', 401
+    
+    # 取得所有用戶
+    user_ids = get_all_user_ids()
+    
+    results = []
+    for user_id in user_ids:
+        companion_key = get_user_companion(user_id)
+        companion = COMPANION_PRESETS.get(companion_key) if companion_key else None
+        
+        greeting = companion['greeting'] if companion else "早安！今天過得怎麼樣？"
+        
+        try:
+            line_bot_api.push_message(user_id, TextSendMessage(text=greeting))
+            results.append(f"OK: {user_id}")
+        except Exception as e:
+            results.append(f"FAIL: {user_id} - {e}")
+    
+    return f"Daily check sent to {len(results)} users"
+
+# =====================================================
 # 測試模式：懶人開關（True時直接用假的companion回覆）
 TEST_MODE = False  # 生產環境設為False
 

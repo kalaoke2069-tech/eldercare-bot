@@ -101,6 +101,11 @@ def remove_family_member(user_id, family_line_id):
     return True
 
 
+def get_all_user_ids():
+    """取得所有已註冊的用戶ID列表"""
+    return list(_db["users"].keys())
+
+
 # =====================================================
 # 每日打卡
 # =====================================================
