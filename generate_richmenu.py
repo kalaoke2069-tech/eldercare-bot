@@ -1,14 +1,13 @@
 """
-ElderCare Rich Menu 背景圖生成器 v3
-尺寸: 2500 x 843 px (LINE Rich Menu 標準尺寸)
-清新自然風格 + 彩色 emoji 圖示
+ElderCare Rich Menu 背景圖生成器 v4
+尺寸: 2500 x 1686 px (LINE Rich Menu 標準尺寸)
 """
 
 from PIL import Image, ImageDraw, ImageFont
 import os
 
 WIDTH = 2500
-HEIGHT = 843
+HEIGHT = 1686
 
 # 顏色設定
 WHITE = (255, 255, 255)
@@ -18,8 +17,6 @@ LIGHT_GREEN = (200, 230, 201)
 VERY_LIGHT = (245, 250, 245)
 TEXT_DARK = (55, 71, 79)
 TEXT_GRAY = (110, 120, 130)
-CARD_BG = (250, 250, 250)
-SHADOW = (220, 220, 220)
 
 # 6個功能表
 MENU = [
@@ -32,73 +29,71 @@ MENU = [
 ]
 
 
-def draw_card(draw, x1, y1, x2, y2, color, icon_emoji, title, subtitle):
+def draw_icon_circle(draw, x, y, radius, color, emoji, font_size=70):
+    """在指定位置繪製帶 emoji 的圓形圖示"""
+    # 外圈
+    draw.ellipse([(x - radius, y - radius), (x + radius, y + radius)], fill=LIGHT_GREEN)
+    # 內圈
+    draw.ellipse([(x - radius + 8, y - radius + 8), (x + radius - 8, y + radius - 8)], fill=color)
+    # Emoji
+    try:
+        font_icon = ImageFont.truetype("C:/Windows/Fonts/seguisb.ttf", font_size)
+        draw.text((x - font_size // 2 - 5, y - font_size // 2 - 5), emoji, font=font_icon, fill=WHITE)
+    except:
+        pass
+
+
+def draw_card(draw, x1, y1, x2, y2, color, icon, title, subtitle):
     """繪製一個功能卡片"""
     # 陰影
-    shadow_offset = 8
+    shadow_offset = 10
     draw.rounded_rectangle(
         [(x1 + shadow_offset, y1 + shadow_offset), (x2, y2)],
-        radius=25,
-        fill=SHADOW
+        radius=30,
+        fill=(220, 220, 220)
     )
     
     # 白色卡片背景
     draw.rounded_rectangle(
         [(x1, y1), (x2 - shadow_offset, y2 - shadow_offset)],
-        radius=25,
+        radius=30,
         fill=WHITE
     )
     
     # 左側彩色邊條
     draw.rounded_rectangle(
-        [(x1, y1), (x1 + 16, y2 - shadow_offset)],
-        radius=8,
+        [(x1, y1), (x1 + 18, y2 - shadow_offset)],
+        radius=9,
         fill=color
     )
     
-    # 圖示背景（淺綠色圓形）
-    icon_x = x1 + 110
+    # 圖示
+    icon_x = x1 + 130
     icon_y = y1 + (y2 - y1) // 2
-    draw.ellipse(
-        [(icon_x - 60, icon_y - 60), (icon_x + 60, icon_y + 60)],
-        fill=LIGHT_GREEN
-    )
-    draw.ellipse(
-        [(icon_x - 52, icon_y - 52), (icon_x + 52, icon_y + 52)],
-        fill=color
-    )
-    
-    # 嘗試載入字體
-    try:
-        font_icon = ImageFont.truetype("C:/Windows/Fonts/seguisb.ttf", 70)
-        font_title = ImageFont.truetype("C:/Windows/Fonts/msjh.ttc", 48)
-        font_sub = ImageFont.truetype("C:/Windows/Fonts/msjh.ttc", 28)
-    except:
-        font_icon = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 70)
-        font_title = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 48)
-        font_sub = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 28)
-    
-    # 圖示 emoji（使用 emoji font fallback）
-    try:
-        draw.text((icon_x - 28, icon_y - 38), icon_emoji, font=font_icon, fill=WHITE)
-    except:
-        # 如果 emoji 不支援，用文字替代
-        pass
+    draw_icon_circle(draw, icon_x, icon_y, 70, color, icon)
     
     # 標題
-    title_x = x1 + 220
+    try:
+        font_title = ImageFont.truetype("C:/Windows/Fonts/msjh.ttc", 52)
+        font_sub = ImageFont.truetype("C:/Windows/Fonts/msjh.ttc", 28)
+    except:
+        font_title = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 52)
+        font_sub = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 28)
+    
+    title_x = x1 + 260
     title_y = y1 + 90
     draw.text((title_x, title_y), title, font=font_title, fill=TEXT_DARK)
     
     # 副標題
-    sub_y = title_y + 65
+    sub_y = title_y + 70
     draw.text((title_x, sub_y), subtitle, font=font_sub, fill=TEXT_GRAY)
     
     # 右側箭頭
-    arrow_x = x2 - 80
-    arrow_y = y1 + (y2 - y1) // 2 - 25
     try:
-        draw.text((arrow_x, arrow_y), ">", font=font_icon, fill=(180, 180, 180))
+        font_arrow = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 60)
+        arrow_x = x2 - 100
+        arrow_y = y1 + (y2 - y1) // 2 - 30
+        draw.text((arrow_x, arrow_y), ">", font=font_arrow, fill=(180, 180, 180))
     except:
         pass
 
@@ -109,38 +104,34 @@ def create_rich_menu():
     draw = ImageDraw.Draw(img)
     
     # 頂部綠色條
-    draw.rectangle([(0, 0), (WIDTH, 8)], fill=ACCENT_GREEN)
+    draw.rectangle([(0, 0), (WIDTH, 10)], fill=ACCENT_GREEN)
     
     # 頂部標題區（淺綠色背景）
-    draw.rectangle([(0, 8), (WIDTH, 100)], fill=VERY_LIGHT)
+    draw.rectangle([(0, 10), (WIDTH, 130)], fill=VERY_LIGHT)
     
     # 標題
     try:
-        font_brand = ImageFont.truetype("C:/Windows/Fonts/msjh.ttc", 44)
+        font_brand = ImageFont.truetype("C:/Windows/Fonts/msjh.ttc", 52)
+        font_tag = ImageFont.truetype("C:/Windows/Fonts/msjh.ttc", 28)
     except:
-        font_brand = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 44)
+        font_brand = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 52)
+        font_tag = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 28)
     
-    draw.text((50, 28), "ElderCare 陪伴者", font=font_brand, fill=PRIMARY_GREEN)
-    
-    try:
-        font_tag = ImageFont.truetype("C:/Windows/Fonts/msjh.ttc", 24)
-    except:
-        font_tag = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 24)
-    
-    draw.text((50, 65), "您的專屬長照 AI 助手", font=font_tag, fill=TEXT_GRAY)
+    draw.text((60, 40), "ElderCare 陪伴者", font=font_brand, fill=PRIMARY_GREEN)
+    draw.text((60, 95), "您的專屬長照 AI 助手", font=font_tag, fill=TEXT_GRAY)
     
     # 底部標語
-    draw.text((WIDTH - 250, HEIGHT - 45), "24/7 AI 陪伴", font=font_tag, fill=TEXT_GRAY)
+    draw.text((WIDTH - 300, HEIGHT - 55), "24/7 AI 陪伴", font=font_tag, fill=TEXT_GRAY)
     
     # 分隔線
-    draw.rectangle([(0, 100), (WIDTH, 104)], fill=ACCENT_GREEN)
+    draw.rectangle([(0, 130), (WIDTH, 136)], fill=ACCENT_GREEN)
     
-    # 6宮格
+    # 6宮格（3列 x 2行）
     cols, rows = 3, 2
     cell_w = WIDTH // cols
-    cell_h = (HEIGHT - 104) // rows
-    gap = 35
-    start_y = 104
+    cell_h = (HEIGHT - 136) // rows
+    gap = 40
+    start_y = 136
     
     for i, item in enumerate(MENU):
         col = i % cols
@@ -154,13 +145,13 @@ def create_rich_menu():
         draw_card(draw, x1, y1, x2, y2, item["color"], item["icon"], item["title"], item["subtitle"])
     
     # 底部綠色條
-    draw.rectangle([(0, HEIGHT - 8), (WIDTH, HEIGHT)], fill=ACCENT_GREEN)
+    draw.rectangle([(0, HEIGHT - 10), (WIDTH, HEIGHT)], fill=ACCENT_GREEN)
     
-    # 角落裝飾（葉子效果）
-    for i in range(4):
-        y = HEIGHT - 60 - i * 15
-        draw.ellipse([(25 - i*5, y), (45 - i*5, y + 20)], fill=LIGHT_GREEN)
-        draw.ellipse([(WIDTH - 45 + i*5, y), (WIDTH - 25 + i*5, y + 20)], fill=LIGHT_GREEN)
+    # 角落裝飾
+    for i in range(5):
+        y = HEIGHT - 80 - i * 20
+        draw.ellipse([(30 - i*6, y), (50 - i*6, y + 25)], fill=LIGHT_GREEN)
+        draw.ellipse([(WIDTH - 50 + i*6, y), (WIDTH - 30 + i*6, y + 25)], fill=LIGHT_GREEN)
     
     return img
 
@@ -168,7 +159,7 @@ def create_rich_menu():
 if __name__ == "__main__":
     output_path = os.path.join(os.path.dirname(__file__), "richmenu_output.png")
     
-    print("Generating Rich Menu image v3...")
+    print("Generating Rich Menu image v4 (2500 x 1686)...")
     img = create_rich_menu()
     img.save(output_path)
     print("Rich Menu saved to: " + output_path)

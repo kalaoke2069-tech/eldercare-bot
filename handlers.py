@@ -76,7 +76,15 @@ def handle_text(reply_token, user_id, text):
         handle_command(reply_token, user_id, text)
         return
 
-    # 3.5 長照資源查詢（關鍵字：長照、照護、長者、老人）
+    # 3.5 Rich Menu 按鈕文字（觸發 Flex Message）
+    menu_actions = ["menu_service_intro", "menu_ltc_database", "menu_emergency_phone", "menu_medical_care", "menu_user_guide", "menu_more_features"]
+    if text in menu_actions:
+        flex_msg = get_flex_message(text)
+        if flex_msg:
+            _get_api().reply_message(reply_token, flex_msg)
+        return
+
+    # 3.6 長照資源查詢
     ltc_keywords = ["長照", "照護", "長者", "老人", "介護", "care"]
     if any(kw in text for kw in ltc_keywords):
         # 提取查詢內容
