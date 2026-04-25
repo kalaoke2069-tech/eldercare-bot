@@ -31,6 +31,7 @@ from companions import COMPANION_PRESETS, get_companion, format_companion_for_ai
 from ai_service import ask_ai
 from database import record_message, get_user_companion, set_user_companion, daily_check_in, record_blood_pressure
 from ltc_data import search_ltc, format_ltc_result, get_all_resources_summary
+from flex_messages import get_flex_message, FLEX_MAP
 
 
 # =====================================================
@@ -216,6 +217,11 @@ def handle_postback(reply_token, user_id, data):
         # 換朋友
         guide_companion_selection(reply_token, user_id)
 
+    # Rich Menu 按鈕
+    elif data in FLEX_MAP:
+        flex_msg = get_flex_message(data)
+        if flex_msg:
+            _get_api().reply_message(reply_token, flex_msg)
 
 # =====================================================
 # Companion 選擇
