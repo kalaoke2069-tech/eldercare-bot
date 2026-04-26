@@ -1,49 +1,76 @@
 """
-ElderCare Companion — 資料庫管理
-使用 Firebase Firestore 儲存所有用戶資料
+ElderCare 資料庫模組 - Firebase Firestore 持久化
 """
 
-import os
+import base64
 import json
-from datetime import datetime, timedelta
-from collections import defaultdict
+import os
+from datetime import datetime
+
+import firebase_admin
+from firebase_admin import credentials, firestore
 
 # =====================================================
-# 簡單的 In-Memory 資料庫（測試用）
-# 生產環境請使用 Firebase Firestore
+# Firebase 初始化
 # =====================================================
 
-# 結構：
-# {
-#   "users": {
-#       "LINE_USER_ID": {
-#           "companion_key": "scholar",
-#           "family": ["LINE_ID_1", "LINE_ID_2"],
-#           "created_at": "2026-04-14",
-#           "subscription": "basic",  # free / basic / premium
-#           "check_ins": {
-#               "2026-04-14": "09:30",
-#               ...
-#           },
-#           "blood_pressure": [
-#               {"date": "2026-04-14", "time": "09:30", "systolic": 125, "diastolic": 80},
-#               ...
-#           ],
-#           "medications": [
-#               {"name": "高血壓藥", "times": ["08:00", "20:00"]},
-#               ...
-#           ]
-#       }
-#   }
-# }
+def _init_firebase():
+    """初始化 Firebase Admin SDK"""
+    # 先嘗試從 Railway 環境變數讀取（base64 encoded JSON）
+    cred_b64 = os.environ.get('FIREBASE_CREDENTIALS')
+    if cred_b64:
+        try:
+            cred_content = base64.b64decode(cred_b64).decode('utf-8')
+            cred_dict = json.loads(cred_content)
+            cred = credentials.Certificate(cred_dict)
+            if not firebase_admin._apps:
+                firebase_admin.initialize_app(cred)
+            return
+        except Exception as e:
+            print(f"Failed to parse FIREBASE_CREDENTIALS env var: {e}")
+    
+    # 否則從本地檔案讀取
+    cred_path = os.path.join(os.path.dirname(__file__), "firebase-admin.json")
+    if not os.path.exists(cred_path):
+        raise FileNotFoundError(f"Firebase credentials not found: {cred_path}")
+    
+    cred = credentials.Certificate(cred_path)
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
 
-_db = defaultdict(lambda: defaultdict(dict))
+_db_client = None
+
+def get_db():
+    """取得 Firestore 客戶端（單例）"""
+    global _db_client
+    if _db_client is None:
+        _init_firebase()
+        _db_client = firestore.client()
+    return _db_client
+
+# =====================================================
+# 用戶資料操作
+# =====================================================
+
+def _get_user_ref(user_id):
+    """取得用戶文檔引用"""
+    db = get_db()
+    return db.collection("users").document(str(user_id))
 
 
 def _get_user(user_id):
+    """取得用戶資料"""
+    doc = _get_user_ref(user_id).get()
+    if doc.exists:
+        return doc.to_dict()
+    return None
+
+
+def _get_or_create_user(user_id):
     """取得或建立用戶資料"""
-    if user_id not in _db["users"]:
-        _db["users"][user_id] = {
+    user = _get_user(user_id)
+    if user is None:
+        user = {
             "companion_key": None,
             "family": [],
             "created_at": datetime.now().isoformat(),
@@ -53,7 +80,8 @@ def _get_user(user_id):
             "medications": [],
             "messages": []
         }
-    return _db["users"][user_id]
+        _get_user_ref(user_id).set(user)
+    return user
 
 
 # =====================================================
@@ -62,14 +90,13 @@ def _get_user(user_id):
 
 def get_user_companion(user_id):
     """取得用戶的 Companion"""
-    user = _get_user(user_id)
+    user = _get_or_create_user(user_id)
     return user.get("companion_key")
 
 
 def set_user_companion(user_id, companion_key):
     """設定用戶的 Companion"""
-    user = _get_user(user_id)
-    user["companion_key"] = companion_key
+    _get_user_ref(user_id).update({"companion_key": companion_key})
     return True
 
 
@@ -79,185 +106,155 @@ def set_user_companion(user_id, companion_key):
 
 def get_family_members(user_id):
     """取得用戶的所有家人 LINE ID"""
-    user = _get_user(user_id)
+    user = _get_or_create_user(user_id)
     return user.get("family", [])
 
 
 def add_family_member(user_id, family_line_id):
     """加入家人"""
-    user = _get_user(user_id)
-    if "family" not in user:
-        user["family"] = []
-    if family_line_id not in user["family"]:
-        user["family"].append(family_line_id)
+    user = _get_or_create_user(user_id)
+    family = user.get("family", [])
+    if family_line_id not in family:
+        family.append(family_line_id)
+        _get_user_ref(user_id).update({"family": family})
     return True
 
 
 def remove_family_member(user_id, family_line_id):
     """移除家人"""
-    user = _get_user(user_id)
-    if family_line_id in user.get("family", []):
-        user["family"].remove(family_line_id)
+    user = _get_or_create_user(user_id)
+    family = user.get("family", [])
+    if family_line_id in family:
+        family.remove(family_line_id)
+        _get_user_ref(user_id).update({"family": family})
     return True
 
 
+# =====================================================
+# 所有用戶
+# =====================================================
+
 def get_all_user_ids():
     """取得所有已註冊的用戶ID列表"""
-    return list(_db["users"].keys())
+    db = get_db()
+    users = db.collection("users").get()
+    return [doc.id for doc in users]
 
 
 # =====================================================
-# 每日打卡
+# 健康資料
 # =====================================================
 
 def daily_check_in(user_id):
     """每日打卡"""
-    user = _get_user(user_id)
-    today = datetime.now().strftime("%Y-%m-%d")
-    now = datetime.now().strftime("%H:%M")
-
-    if "check_ins" not in user:
-        user["check_ins"] = {}
-
-    user["check_ins"][today] = now
-
-    return {"date": today, "time": now}
+    date_key = datetime.now().strftime('%Y-%m-%d')
+    add_check_in(user_id, date_key, "completed")
 
 
-def get_check_in_history(user_id, days=30):
-    """取得打卡歷史"""
-    user = _get_user(user_id)
-    history = user.get("check_ins", {})
+def record_message(user_id, user_message, ai_response, companion_key=None):
+    """記錄對話（舊接口，向下相容）"""
+    add_message(user_id, "user", user_message)
+    add_message(user_id, "assistant", ai_response)
 
-    # 過濾最近的天數
-    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-    return {k: v for k, v in history.items() if k >= cutoff}
-
-
-# =====================================================
-# 血壓記錄
-# =====================================================
 
 def record_blood_pressure(user_id, systolic, diastolic):
-    """記錄血壓"""
-    user = _get_user(user_id)
-    today = datetime.now().strftime("%Y-%m-%d")
-    now = datetime.now().strftime("%H:%M")
+    """記錄血壓（舊接口，向下相容）"""
+    add_blood_pressure(user_id, systolic, diastolic)
 
-    if "blood_pressure" not in user:
-        user["blood_pressure"] = []
 
-    record = {
-        "date": today,
-        "time": now,
+def add_check_in(user_id, date_key, response):
+    """新增每日打卡"""
+    user = _get_or_create_user(user_id)
+    check_ins = user.get("check_ins", {})
+    check_ins[date_key] = {
+        "response": response,
+        "timestamp": datetime.now().isoformat()
+    }
+    _get_user_ref(user_id).update({"check_ins": check_ins})
+
+
+def get_check_in(user_id, date_key):
+    """取得打卡記錄"""
+    user = _get_or_create_user(user_id)
+    check_ins = user.get("check_ins", {})
+    return check_ins.get(date_key)
+
+
+def add_blood_pressure(user_id, systolic, diastolic):
+    """新增血壓記錄"""
+    user = _get_or_create_user(user_id)
+    bp = user.get("blood_pressure", [])
+    bp.append({
         "systolic": systolic,
-        "diastolic": diastolic
-    }
-
-    user["blood_pressure"].append(record)
-
-    # 保持最近90筆記錄
-    if len(user["blood_pressure"]) > 90:
-        user["blood_pressure"] = user["blood_pressure"][-90:]
-
-    return record
+        "diastolic": diastolic,
+        "timestamp": datetime.now().isoformat()
+    })
+    _get_user_ref(user_id).update({"blood_pressure": bp})
 
 
-def get_blood_pressure_history(user_id, days=30):
+def get_blood_pressure_history(user_id, limit=10):
     """取得血壓歷史"""
-    user = _get_user(user_id)
-    records = user.get("blood_pressure", [])
-
-    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-    return [r for r in records if r["date"] >= cutoff]
+    user = _get_or_create_user(user_id)
+    bp = user.get("blood_pressure", [])
+    return bp[-limit:]
 
 
 # =====================================================
-# 用藥記錄
+# 用藥提醒
 # =====================================================
 
-def add_medication(user_id, name, times):
-    """新增用藥"""
-    user = _get_user(user_id)
-    if "medications" not in user:
-        user["medications"] = []
-
-    medication = {
-        "name": name,
-        "times": times,
-        "added_at": datetime.now().isoformat()
-    }
-
-    user["medications"].append(medication)
-    return medication
+def set_medications(user_id, medications):
+    """設定用藥清單"""
+    _get_user_ref(user_id).update({"medications": medications})
 
 
 def get_medications(user_id):
-    """取得所有用藥"""
-    user = _get_user(user_id)
+    """取得用藥清單"""
+    user = _get_or_create_user(user_id)
     return user.get("medications", [])
 
 
 # =====================================================
-# 對話記錄
+# 訊息歷史
 # =====================================================
 
-def record_message(user_id, user_message, ai_response, companion_key):
-    """記錄對話"""
-    user = _get_user(user_id)
-    if "messages" not in user:
-        user["messages"] = []
-
-    record = {
-        "timestamp": datetime.now().isoformat(),
-        "user": user_message,
-        "ai": ai_response,
-        "companion": companion_key
-    }
-
-    user["messages"].append(record)
-
-    # 保持最近500筆
-    if len(user["messages"]) > 500:
-        user["messages"] = user["messages"][-500:]
-
-    return record
+def add_message(user_id, role, content):
+    """新增訊息到歷史"""
+    user = _get_or_create_user(user_id)
+    messages = user.get("messages", [])
+    messages.append({
+        "role": role,
+        "content": content,
+        "timestamp": datetime.now().isoformat()
+    })
+    # 保留最近 50 條訊息
+    if len(messages) > 50:
+        messages = messages[-50:]
+    _get_user_ref(user_id).update({"messages": messages})
 
 
-def get_message_history(user_id, limit=50):
-    """取得對話歷史"""
-    user = _get_user(user_id)
+def get_messages(user_id, limit=20):
+    """取得最近訊息"""
+    user = _get_or_create_user(user_id)
     messages = user.get("messages", [])
     return messages[-limit:]
 
 
+def clear_messages(user_id):
+    """清除訊息歷史"""
+    _get_user_ref(user_id).update({"messages": []})
+
+
 # =====================================================
-# 訂閱管理
+# 訂閱狀態
 # =====================================================
 
 def get_subscription(user_id):
     """取得訂閱狀態"""
-    user = _get_user(user_id)
+    user = _get_or_create_user(user_id)
     return user.get("subscription", "free")
 
 
 def set_subscription(user_id, plan):
-    """設定訂閱方案 (free/basic/premium)"""
-    user = _get_user(user_id)
-    user["subscription"] = plan
-    return True
-
-
-# =====================================================
-# 匯出（除錯用）
-# =====================================================
-
-def export_all_data():
-    """匯出所有資料（JSON）"""
-    return dict(_db)
-
-
-def import_data(data):
-    """匯入資料"""
-    global _db
-    _db = defaultdict(lambda: defaultdict(dict), data)
+    """設定訂閱狀態"""
+    _get_user_ref(user_id).update({"subscription": plan})

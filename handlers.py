@@ -58,12 +58,17 @@ COMPANION_OPTIONS = [
 def handle_text(reply_token, user_id, text):
     """處理一般文字訊息,交給 AI Companion 回覆"""
 
-    # 1. 檢查數字選擇 (1-9)
+    # 1. 檢查數字選擇 (1-9) - 優先提供給尚未選擇Companion的用戶
+    # 如果用戶已經有Companion，數字應送到AI處理（如占星師選牌）
     if text.strip() in ['1', '2', '3', '4', '5', '6', '7', '8', '9']:
-        idx = int(text.strip()) - 1
-        companion_key = COMPANION_OPTIONS[idx][0]
-        select_companion(reply_token, user_id, companion_key)
-        return
+        existing_companion = get_user_companion(user_id)
+        if not existing_companion:
+            # 還沒選Companion → 進入挑選流程
+            idx = int(text.strip()) - 1
+            companion_key = COMPANION_OPTIONS[idx][0]
+            select_companion(reply_token, user_id, companion_key)
+            return
+        # 已有Companion → 數字送到AI處理（如占星師的牌選擇）
 
     # 2. 檢查是否有選擇Companion的指令
     if text.startswith("選擇朋友:"):

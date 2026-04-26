@@ -25,6 +25,10 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# 啟動時初始化隨機提醒排程器
+from scheduler import setup_scheduler
+scheduler = setup_scheduler(app)
+
 line_bot_api = LineBotApi(os.getenv('LINE_ACCESS_TOKEN'))
 handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
