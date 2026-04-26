@@ -16,7 +16,19 @@ from firebase_admin import credentials, firestore
 
 def _init_firebase():
     """初始化 Firebase Admin SDK"""
-    # 先嘗試從 Railway 環境變數讀取（base64 encoded JSON）
+    # 方式1: FIREBASE_JSON（純 JSON 字串）
+    cred_json = os.environ.get('FIREBASE_JSON')
+    if cred_json:
+        try:
+            cred_dict = json.loads(cred_json)
+            cred = credentials.Certificate(cred_dict)
+            if not firebase_admin._apps:
+                firebase_admin.initialize_app(cred)
+            return
+        except Exception as e:
+            print(f"Failed to parse FIREBASE_JSON env var: {e}")
+    
+    # 方式2: FIREBASE_CREDENTIALS（base64 encoded）
     cred_b64 = os.environ.get('FIREBASE_CREDENTIALS')
     if cred_b64:
         try:
@@ -29,10 +41,10 @@ def _init_firebase():
         except Exception as e:
             print(f"Failed to parse FIREBASE_CREDENTIALS env var: {e}")
     
-    # 否則從本地檔案讀取
+    # 方式3: 本地檔案（開發用）
     cred_path = os.path.join(os.path.dirname(__file__), "firebase-admin.json")
     if not os.path.exists(cred_path):
-        raise FileNotFoundError(f"Firebase credentials not found: {cred_path}")
+        raise FileNotFoundError(f"Firebase credentials not found at {cred_path}")
     
     cred = credentials.Certificate(cred_path)
     if not firebase_admin._apps:
