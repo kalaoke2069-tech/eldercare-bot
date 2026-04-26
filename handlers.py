@@ -58,25 +58,31 @@ COMPANION_OPTIONS = [
 def handle_text(reply_token, user_id, text):
     """處理一般文字訊息,交給 AI Companion 回覆"""
 
-    # 1. 檢查數字選擇 (1-9) - 優先提供給尚未選擇Companion的用戶
-    # 如果用戶已經有Companion，數字應送到AI處理（如占星師選牌）
-    if text.strip() in ['1', '2', '3', '4', '5', '6', '7', '8', '9']:
-        existing_companion = get_user_companion(user_id)
-        if not existing_companion:
-            # 還沒選Companion → 進入挑選流程
-            idx = int(text.strip()) - 1
-            companion_key = COMPANION_OPTIONS[idx][0]
-            select_companion(reply_token, user_id, companion_key)
-            return
-        # 已有Companion → 數字送到AI處理（如占星師的牌選擇）
+    # 1. CC 前綴 = Companion 選擇（從 Quick Reply 來的）
+    if text.strip().upper().startswith('CC'):
+        # 從 Quick Reply 按鈕來的 Companion 選擇
+        idx = int(text.strip()[-1]) - 1
+        companion_key = COMPANION_OPTIONS[idx][0]
+        select_companion(reply_token, user_id, companion_key)
+        return
 
-    # 2. 檢查是否有選擇Companion的指令
+    # 2. 數字 1-9（純數字）→ 送到 AI 處理（如占星師選牌）
+    if text.strip() in ['1', '2', '3', '4', '5', '6', '7', '8', '9']:
+        # 送到 AI 處理，不視為 Companion 選擇
+        pass  # 繼續往下走到 AI 回覆流程
+
+    # 3. 「更換朋友」指令 → 強制顯示Companion選擇
+    if text.strip() in ["更換朋友", "換朋友", "更換", "change companion"]:
+        guide_companion_selection(reply_token, user_id)
+        return
+
+    # 4. 檢查是否有選擇Companion的指令
     if text.startswith("選擇朋友:"):
         companion_key = text.replace("選擇朋友:", "").strip()
         select_companion(reply_token, user_id, companion_key)
         return
 
-    # 3. 指令處理
+    # 5. 指令處理
     if text.startswith("/"):
         handle_command(reply_token, user_id, text)
         return
@@ -287,39 +293,37 @@ def guide_companion_selection(reply_token, user_id):
 
 在開始聊天之前，告訴我你喜歡什麼類型的朋友？
 
-{options_text}
-
 請輸入數字 1-9 選擇！
 也可以直接說「更換朋友」重新選擇。"""
     
-    # Quick Reply 按鈕（9個Companion + 功能按鈕）
+    # Quick Reply 按鈕（9個Companion） - 使用 CC 前綴區分 Companion 選擇和一般數字回覆
     quick_reply_buttons = [
         QuickReplyButton(
-            action=MessageAction(label="1️⃣ 老陳(學者)", text="1")
+            action=MessageAction(label="1️⃣ 老陳(學者)", text="CC1")
         ),
         QuickReplyButton(
-            action=MessageAction(label="2️⃣ 美雲阿姨(長輩)", text="2")
+            action=MessageAction(label="2️⃣ 美雲阿姨(長輩)", text="CC2")
         ),
         QuickReplyButton(
-            action=MessageAction(label="3️⃣ 阿Ken(業務員)", text="3")
+            action=MessageAction(label="3️⃣ 阿Ken(業務員)", text="CC3")
         ),
         QuickReplyButton(
-            action=MessageAction(label="4️⃣ 阿美姐(廚師)", text="4")
+            action=MessageAction(label="4️⃣ 阿美姐(廚師)", text="CC4")
         ),
         QuickReplyButton(
-            action=MessageAction(label="5️⃣ 韻璇(占星師)", text="5")
+            action=MessageAction(label="5️⃣ 韻璇(占星師)", text="CC5")
         ),
         QuickReplyButton(
-            action=MessageAction(label="6️⃣ 雲峰大師(命理)", text="6")
+            action=MessageAction(label="6️⃣ 雲峰大師(命理)", text="CC6")
         ),
         QuickReplyButton(
-            action=MessageAction(label="7️⃣ 洛克菲勒(商業)", text="7")
+            action=MessageAction(label="7️⃣ 洛克菲勒(商業)", text="CC7")
         ),
         QuickReplyButton(
-            action=MessageAction(label="8️⃣ 李嘉誠(華人超人)", text="8")
+            action=MessageAction(label="8️⃣ 李嘉誠(華人超人)", text="CC8")
         ),
         QuickReplyButton(
-            action=MessageAction(label="9️⃣ 西蒙斯(量化)", text="9")
+            action=MessageAction(label="9️⃣ 西蒙斯(量化)", text="CC9")
         ),
     ]
     
