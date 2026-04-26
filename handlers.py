@@ -254,37 +254,81 @@ def select_companion(reply_token, user_id, companion_key):
     set_user_companion(user_id, companion_key)
     companion = COMPANION_PRESETS[companion_key]
 
-    response = f"""
-🤝 設定成功!
+    response = f"""🌟 設定成功！
 
-從現在起,你的陪伴者是:
+從現在起，你的 AI 陪伴者是：
 「{companion['name']}」
 
 {companion['intro']}
 
-明天開始每天都會跟你打招呼哦!🌞
-    """
+從今天起每天都會跟你打招呼 🌞
+有任何問題隨時可以問我哦！
+
+P.S. 傳「更換朋友」可以重新選擇角色"""
 
     _get_api().reply_message(reply_token, TextSendMessage(text=response))
 
 
 def guide_companion_selection(reply_token, user_id):
-    """引導用戶選擇Companion"""
-
+    """引導用戶選擇Companion（帶 Quick Reply 按鈕）"""
+    
+    from linebot.models import QuickReply, QuickReplyButton, MessageAction
+    
     # 顯示9種人格選項
     options_text = "\n".join([f"{i+1}️⃣ {name} — {desc}" for i, (_, name, desc) in enumerate(COMPANION_OPTIONS)])
     
-    text = f"""👋 嗨！我是你的AI陪伴者！
+    welcome_text = """🌙 您好！
+
+我是 ElderCare Chatbot。
+感謝您加入好友 💌
+
+此官方帳號將定期發放最新資訊給您
+敬請期待 🎁✨
 
 在開始聊天之前，告訴我你喜歡什麼類型的朋友？
 
 {options_text}
 
 請輸入數字 1-9 選擇！
-
-輸入「更換朋友」可以看更多人格哦！"""
-
-    _get_api().reply_message(reply_token, TextSendMessage(text=text))
+也可以直接說「更換朋友」重新選擇。"""
+    
+    # Quick Reply 按鈕（9個Companion + 功能按鈕）
+    quick_reply_buttons = [
+        QuickReplyButton(
+            action=MessageAction(label="1️⃣ 老陳(學者)", text="1")
+        ),
+        QuickReplyButton(
+            action=MessageAction(label="2️⃣ 美雲阿姨(長輩)", text="2")
+        ),
+        QuickReplyButton(
+            action=MessageAction(label="3️⃣ 阿Ken(業務員)", text="3")
+        ),
+        QuickReplyButton(
+            action=MessageAction(label="4️⃣ 阿美姐(廚師)", text="4")
+        ),
+        QuickReplyButton(
+            action=MessageAction(label="5️⃣ 韻璇(占星師)", text="5")
+        ),
+        QuickReplyButton(
+            action=MessageAction(label="6️⃣ 雲峰大師(命理)", text="6")
+        ),
+        QuickReplyButton(
+            action=MessageAction(label="7️⃣ 洛克菲勒(商業)", text="7")
+        ),
+        QuickReplyButton(
+            action=MessageAction(label="8️⃣ 李嘉誠(華人超人)", text="8")
+        ),
+        QuickReplyButton(
+            action=MessageAction(label="9️⃣ 西蒙斯(量化)", text="9")
+        ),
+    ]
+    
+    quick_reply = QuickReply(items=quick_reply_buttons)
+    
+    _get_api().reply_message(
+        reply_token,
+        TextSendMessage(text=welcome_text, quick_reply=quick_reply)
+    )
 
 
 # =====================================================
