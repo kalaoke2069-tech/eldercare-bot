@@ -107,8 +107,13 @@ def get_user_companion(user_id):
 
 
 def set_user_companion(user_id, companion_key):
-    """設定用戶的 Companion"""
-    _get_user_ref(user_id).update({"companion_key": companion_key})
+    """設定用戶的 Companion（如果文檔不存在則先建立）"""
+    ref = _get_user_ref(user_id)
+    doc = ref.get()
+    if doc.exists:
+        ref.update({"companion_key": companion_key})
+    else:
+        ref.set({"companion_key": companion_key}, merge=True)
     return True
 
 
