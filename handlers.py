@@ -294,7 +294,9 @@ def guide_companion_selection(reply_token, user_id):
 在開始聊天之前，告訴我你喜歡什麼類型的朋友？
 
 請輸入數字 1-9 選擇！
-也可以直接說「更換朋友」重新選擇。"""
+也可以直接說「更換朋友」重新選擇。
+
+💡 提示：如果看到這個畫面不用擔心，直接按數字 1-9 就可以開始使用哦！"""
     
     # Quick Reply 按鈕（9個Companion） - 使用 CC 前綴區分 Companion 選擇和一般數字回覆
     quick_reply_buttons = [
