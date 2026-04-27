@@ -146,7 +146,17 @@ def handle_text(reply_token, user_id, text):
             return
 
     # 4. 日常聊天 → AI Companion 回覆
-    companion_key = get_user_companion(user_id)
+    # 加錯誤處理，避免 Firebase 問題時直接崩潰
+    try:
+        companion_key = get_user_companion(user_id)
+    except Exception as e:
+        print(f"Failed to get companion for {user_id}: {e}")
+        _get_api().reply_message(
+            reply_token,
+            TextSendMessage(text="⚠️ 系統連線有點問題，請稍後再傳訊息給我哦！")
+        )
+        return
+
     if not companion_key:
         # 還沒選Companion → 引導選擇
         guide_companion_selection(reply_token, user_id)
@@ -256,8 +266,17 @@ def select_companion(reply_token, user_id, companion_key):
         )
         return
 
-    # 設定用戶的Companion
-    set_user_companion(user_id, companion_key)
+    # 設定用戶的Companion（加錯誤處理）
+    try:
+        set_user_companion(user_id, companion_key)
+    except Exception as e:
+        print(f"Failed to set companion for {user_id}: {e}")
+        _get_api().reply_message(
+            reply_token,
+            TextSendMessage(text="⚠️ 網路好像有點問題，請稍後再試一次哦！")
+        )
+        return
+
     companion = COMPANION_PRESETS[companion_key]
 
     response = f"""🌟 設定成功！
