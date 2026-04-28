@@ -72,7 +72,7 @@ def handle_text(reply_token, user_id, text):
         pass  # 繼續往下走到 AI 回覆流程
 
     # 3. 「更換朋友」指令 → 強制顯示Companion選擇
-    if text.strip() in ["更換朋友", "換朋友", "更換", "change companion"]:
+    if text.strip() in ["更換朋友", "換朋友", "更換", "換腳色", "換角色", "更換角色", "change companion"]:
         guide_companion_selection(reply_token, user_id)
         return
 
