@@ -57,7 +57,10 @@ WINDOW_START = 9   # 早上 9 點
 WINDOW_END = 21     # 晚上 9 點
 
 # 每天發送次數
-MESSAGES_PER_DAY = 3
+MESSAGES_PER_DAY = 2
+
+# 每次發送給多少比例的用戶（30%）
+SEND_RATIO = 0.3
 
 
 def get_random_message(companion_key=None):
@@ -93,7 +96,11 @@ def send_random_checkin():
             print(f"[{datetime.now()}] No users to send to")
             return
 
-        for user_id in user_ids:
+        # 隨機選擇 30% 的用戶發送
+        num_to_send = max(1, int(len(user_ids) * SEND_RATIO))
+        selected_users = random.sample(user_ids, min(num_to_send, len(user_ids)))
+
+        for user_id in selected_users:
             try:
                 companion_key = get_user_companion(user_id)
                 companion = get_companion(companion_key) if companion_key else None
@@ -131,7 +138,7 @@ def send_random_checkin():
             except Exception as e:
                 print(f"Failed to send to {user_id}: {e}")
 
-        print(f"[{datetime.now()}] Random check-in sent to {len(user_ids)} users")
+        print(f"[{datetime.now()}] Random check-in sent to {len(selected_users)} users (30% of {len(user_ids)})")
 
     except Exception as e:
         print(f"Scheduler error: {e}")
