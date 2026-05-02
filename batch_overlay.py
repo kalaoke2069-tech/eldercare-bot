@@ -32,6 +32,7 @@ COMPANION_NAMES = {
     "philosopher": "老林",
     "poet": "詩鴻",
     "joker": "小王子",
+    "dog": "旺財",
 }
 
 def add_name_overlay(image_path, name, output_path):
