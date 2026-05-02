@@ -291,26 +291,18 @@ def select_companion(reply_token, user_id, companion_key):
     avatar_url = companion.get('avatar_url')
 
     if avatar_url:
+        # 先發送圖片
         image_url = f"https://eldercare-bot-production.up.railway.app{avatar_url}"
-        # 圖片 + greeting 作為 caption 一起發送，確保同時到達
-        caption = f"🌟 設定成功！
-
-從現在起，你的 AI 陪伴者是：「{companion['name']}」
-
-{companion['intro']}
-
-💬 {greeting}"
         _get_api().reply_message(
             reply_token,
             ImageSendMessage(
                 original_content_url=image_url,
-                preview_image_url=image_url,
-                text=caption
+                preview_image_url=image_url
             )
         )
-    else:
-        # 沒有圖片就發一般文字
-        response = f"""🌟 設定成功！
+
+    # 馬上發送 greeting 文字（不管有沒有圖片）
+    response = f"""🌟 設定成功！
 
 從現在起，你的 AI 陪伴者是：
 「{companion['name']}」
@@ -322,7 +314,7 @@ def select_companion(reply_token, user_id, companion_key):
 有任何問題隨時可以問我哦！
 
 P.S. 傳「更換朋友」可以重新選擇角色"""
-        _get_api().reply_message(reply_token, TextSendMessage(text=response))
+    _get_api().reply_message(reply_token, TextSendMessage(text=response))
 
 
 def guide_companion_selection(reply_token, user_id):
