@@ -23,7 +23,7 @@ from ltc_data import get_all_resources_summary
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 
 # 啟動時初始化隨機提醒排程器
 from scheduler import setup_scheduler

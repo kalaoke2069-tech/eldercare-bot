@@ -23,7 +23,7 @@ def _get_api():
         line_bot_api = _get_line_bot_api()
     return line_bot_api
 
-from linebot.models import TextSendMessage, FlexSendMessage, TemplateSendMessage, ButtonsTemplate, MessageAction
+from linebot.models import TextSendMessage, FlexSendMessage, TemplateSendMessage, ButtonsTemplate, MessageAction, ImageSendMessage
 from datetime import datetime
 import random
 
@@ -285,6 +285,18 @@ def select_companion(reply_token, user_id, companion_key):
         return
 
     companion = COMPANION_PRESETS[companion_key]
+
+    # 發送Companion圖片
+    avatar_url = companion.get('avatar_url')
+    if avatar_url:
+        image_url = f"https://eldercare-bot-production.up.railway.app{avatar_url}"
+        _get_api().reply_message(
+            reply_token,
+            ImageSendMessage(
+                original_content_url=image_url,
+                preview_image_url=image_url
+            )
+        )
 
     response = f"""🌟 設定成功！
 
