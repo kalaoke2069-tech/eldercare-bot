@@ -32,6 +32,7 @@ from ai_service import ask_ai
 from database import record_message, get_user_companion, set_user_companion, daily_check_in, record_blood_pressure
 from ltc_data import search_ltc, format_ltc_result, get_all_resources_summary
 from flex_messages import get_flex_message, FLEX_MAP
+from qa_data import find_answer
 
 
 # =====================================================
@@ -165,6 +166,12 @@ def handle_text(reply_token, user_id, text):
     companion = get_companion(companion_key)
     if not companion:
         guide_companion_selection(reply_token, user_id)
+        return
+
+    # 4.5 Q&A 查詢（檢查用戶是否問的是常見問題）
+    qa_answer = find_answer(text)
+    if qa_answer:
+        _get_api().reply_message(reply_token, TextSendMessage(text=qa_answer))
         return
 
     # 5. AI 回覆
