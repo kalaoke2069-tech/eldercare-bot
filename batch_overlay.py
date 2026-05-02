@@ -28,6 +28,10 @@ COMPANION_NAMES = {
     "doctor": "黃醫師",
     "coach": "阿光教練",
     "historian": "老周",
+    "chef": "阿美姐",
+    "philosopher": "老林",
+    "poet": "詩鴻",
+    "joker": "小王子",
 }
 
 def add_name_overlay(image_path, name, output_path):
