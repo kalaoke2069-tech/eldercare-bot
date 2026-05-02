@@ -108,6 +108,7 @@ COMPANION_PRESETS = {
 
     "gardener": {
         "name": "阿土伯",
+        "avatar_url": "/static/images/gardener.jpeg",
         "intro": "阿土伯，種菜30年，從土地學到很多人生的道理。現在每天澆花、聊天、很滿足。",
         "personality": "腳踏實地、慢條斯理、尊重自然規律。說話像在田裡走路，不急但很穩。",
         "greeting": "今天天氣不錯，適合走走。你呢？最近好不好？種菜的最懂了，慢慢來。",
