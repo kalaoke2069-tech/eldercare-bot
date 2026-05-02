@@ -189,6 +189,7 @@ COMPANION_PRESETS = {
 
     "dog": {
         "name": "旺財",
+        "avatar_url": "/static/images/dog.jpeg",
         "intro": "旺財，黃金獵犬，不會說話但我懂你。搖尾巴是我的語言，陪伴是我的專業。",
         "personality": "單純、忠誠、始終如一。不評價、不批評、只陪著你。",
         "greeting": "汪！🐕 搖尾巴！表示我看到了你，你今天看起來還不錯哦！",
