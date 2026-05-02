@@ -285,6 +285,7 @@ def select_companion(reply_token, user_id, companion_key):
         return
 
     companion = COMPANION_PRESETS[companion_key]
+    greeting = companion.get('greeting', '')
 
     # 發送Companion圖片
     avatar_url = companion.get('avatar_url')
@@ -305,7 +306,8 @@ def select_companion(reply_token, user_id, companion_key):
 
 {companion['intro']}
 
-從今天起每天都會跟你打招呼 🌞
+💬 {greeting}
+
 有任何問題隨時可以問我哦！
 
 P.S. 傳「更換朋友」可以重新選擇角色"""
